@@ -1,0 +1,32 @@
+{
+  "name": "personal-apps",
+  "owner": {
+    "name": "h1902y",
+    "email": "mail@h1902y.com"
+  },
+  "metadata": {
+    "description": "Personal apps from the h1902y Library: one small AI app for one weekly task."
+  },
+  "plugins": [
+    {
+      "name": "weekly-ticket-summary",
+      "source": {
+        "source": "github",
+        "repo": "h1902y/weekly-ticket-summary"
+      },
+      "description": "Drop last week's help desk export into Claude and get the themes, counts and urgent tickets your team should read first.",
+      "category": "support",
+      "homepage": "https://h1902y.com/library/weekly-ticket-summary"
+    },
+    {
+      "name": "meeting-actions-to-owners",
+      "source": {
+        "source": "github",
+        "repo": "h1902y/meeting-actions-to-owners"
+      },
+      "description": "Paste raw meeting notes into Claude and get every action with one owner, the gaps flagged and a follow-up drafted for each person.",
+      "category": "product",
+      "homepage": "https://h1902y.com/library/meeting-actions-to-owners"
+    }
+  ]
+}
