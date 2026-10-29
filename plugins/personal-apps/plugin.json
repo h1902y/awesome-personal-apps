@@ -1,0 +1,34 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "personal-apps",
+  "version": "1.0.0",
+  "description": "Every personal app from the h1902y Library: one small AI app for one weekly task, each a skill. New apps arrive with each update.",
+  "author": {
+    "name": "h1902y",
+    "email": "mail@h1902y.com",
+    "url": "https://h1902y.com"
+  },
+  "homepage": "https://h1902y.com/library",
+  "repository": "https://github.com/h1902y/awesome-personal-apps",
+  "license": "MIT",
+  "keywords": [
+    "personal-app",
+    "h1902y-library"
+  ],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Personal apps",
+        "shortDescription": "Every personal app from the h1902y Library in one plugin",
+        "developerName": "h1902y",
+        "category": "Productivity",
+        "websiteURL": "https://h1902y.com/library",
+        "privacyPolicyURL": "https://h1902y.com/privacy",
+        "termsOfServiceURL": "https://h1902y.com/terms",
+        "defaultPrompt": [
+          "Which personal app fits the file I'm about to share?"
+        ]
+      }
+    }
+  }
+}

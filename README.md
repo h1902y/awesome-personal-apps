@@ -9,7 +9,16 @@ Small AI apps for one weekly task: each one is a Claude skill, a prompt and samp
 /plugin install <app-name>@personal-apps
 ```
 
-In Claude (web or desktop), download the app's `-skill.zip` from its repo, then go to **Customize > Skills > + > Create skill > Upload a skill** and turn it on. Works on any plan, Free included; Code execution must be on in Settings > Capabilities.
+Every app at once: `/plugin install personal-apps@personal-apps` (new apps arrive with its updates). Install either single apps or the bundle, not both: with both, each skill shows twice.
+
+## Install in Codex
+
+```
+codex plugin marketplace add h1902y/awesome-personal-apps
+codex plugin add <app-name>@personal-apps
+```
+
+In Claude (web or desktop), download the app's `-skill.zip` from its repo's latest release, then go to **Customize > Skills > + > Create skill > Upload a skill** and turn it on. Works on any plan, Free included; Code execution must be on in Settings > Capabilities.
 
 ## Apps
 
