@@ -19,16 +19,6 @@
       "homepage": "https://h1902y.com/library/weekly-ticket-summary"
     },
     {
-      "name": "meeting-actions-to-owners",
-      "source": {
-        "source": "url",
-        "url": "https://github.com/h1902y/meeting-actions-to-owners.git"
-      },
-      "description": "Paste raw meeting notes into Claude and get every action with one owner, the gaps flagged and a follow-up drafted for each person.",
-      "category": "product",
-      "homepage": "https://h1902y.com/library/meeting-actions-to-owners"
-    },
-    {
       "name": "personal-apps",
       "source": "./plugins/personal-apps",
       "description": "Every personal app from the h1902y Library in one plugin; new apps arrive with its updates.",

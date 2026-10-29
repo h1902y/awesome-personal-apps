@@ -26,10 +26,6 @@ In Claude (web or desktop), download the app's `-skill.zip` from its repo's late
 
 - [Weekly ticket summary](https://github.com/h1902y/weekly-ticket-summary): Drop last week's help desk export into Claude and get the themes, counts and urgent tickets your team should read first. ([page](https://h1902y.com/library/weekly-ticket-summary?utm_source=github&utm_medium=index&utm_campaign=library))
 
-### Product and project
-
-- [Meeting actions to owners](https://github.com/h1902y/meeting-actions-to-owners): Paste raw meeting notes into Claude and get every action with one owner, the gaps flagged and a follow-up drafted for each person. ([page](https://h1902y.com/library/meeting-actions-to-owners?utm_source=github&utm_medium=index&utm_campaign=library))
-
 ## Ask for an app
 
 Open a Discussion with the weekly task you'd like to hand off. We build one new app every week.
