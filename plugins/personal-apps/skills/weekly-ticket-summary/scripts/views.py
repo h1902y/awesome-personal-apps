@@ -251,23 +251,23 @@ class Views:
         load = self.ctx.get("load")
         at = next((i for i, l in enumerate(ps) if load and l["_row"] == load["_row"]), -1)
         prev_load = ps[at + 1] if at >= 0 and at + 1 < len(ps) else None
-        prev_rows = []
-        if prev_load:
-            sub = Views(self.spec, self.store, {"load": prev_load, "prev": ps[at + 2] if at + 2 < len(ps) else None, "now": self.ctx.get("now")})
-            prev_rows = sub._run(sub._source(self.spec["views"][name]["from"]), before, name)
-        prev = {_key(r.get(p["by"])): (r.get(p["value"]) if r.get(p["value"]) is not None else "0") for r in prev_rows}
+        if not prev_load:
+            return []  # no previous period: no rows, so the component shows its empty text (D-39)
+        sub = Views(self.spec, self.store, {"load": prev_load, "prev": ps[at + 2] if at + 2 < len(ps) else None, "now": self.ctx.get("now")})
+        prev_rows = sub._run(sub._source(self.spec["views"][name]["from"]), before, name)
+        by = p["by"]  # the by field keeps its own name (D-39)
+        prev = {_key(r.get(by)): (r.get(p["value"]) if r.get(p["value"]) is not None else "0") for r in prev_rows}
         seen, out = set(), []
         for r in rows:
-            k = _key(r.get(p["by"]))
+            k = _key(r.get(by))
             seen.add(k)
             now = r.get(p["value"]) if r.get(p["value"]) is not None else "0"
             b = prev.get(k, "0")
-            out.append({"by": r.get(p["by"]), "before": b if prev_load else None, "now": now,
-                        "change": D.sub(now, b) if prev_load else None})
+            out.append({by: r.get(by), "before": b, "now": now, "change": D.sub(now, b)})
         for r in prev_rows:
-            if _key(r.get(p["by"])) not in seen:
+            if _key(r.get(by)) not in seen:
                 b = r.get(p["value"]) if r.get(p["value"]) is not None else "0"
-                out.append({"by": r.get(p["by"]), "before": b, "now": "0", "change": D.neg(b)})
+                out.append({by: r.get(by), "before": b, "now": "0", "change": D.neg(b)})
         return out
 
 

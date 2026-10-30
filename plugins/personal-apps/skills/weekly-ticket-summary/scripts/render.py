@@ -33,6 +33,9 @@ def fmt(value, fmt_: str | None, ftype: str = "text", currency: str | None = Non
         return C.fmt_money(str(value), currency)
     if f == "date":
         return C.fmt_date(str(value))
+    if f == "delta" and D.is_dec(str(value)):  # a compare's change, as A1 v1.1.0 printed it (D-39)
+        c = D.cmp(str(value), "0")
+        return "same" if c == 0 else ("+" if c > 0 else "") + C.fmt_num(str(value))
     return str(value)
 
 

@@ -20,7 +20,7 @@ Answer the support lead's questions about this week's tickets and send the work 
 - `view:urgent` (rows keyed by `id`): Fields: id, customer, subject, message, category, status, priority, waiting_hours, created, target_hours, due, wait_h, over_h, urgent_prio, waiting, flag, is_over, urgent, why, urgent_n, over_n.
 - `view:theme_counts` (rows keyed by `group`): Fields: group, count, share, quote, quote_id, example.
 - `view:summary_text` (one row): Fields: text.
-- `view:compare_last` (rows keyed by `by`): Fields: by, before, now, change, group.
+- `view:compare_last` (rows keyed by `group`): Fields: group, before, now, change.
 - `view:note_text` (one row): Fields: text.
 - `view:queue` (rows keyed by `id`): Fields: id, customer, subject, message, category, status, priority, waiting_hours, created, target_hours, due, wait_h, over_h, urgent_prio, waiting, flag, is_over, urgent, why, urgent_n, over_n, mark, mark_until, draft.
 - `view:trends` (rows): Fields: period, by, value.
