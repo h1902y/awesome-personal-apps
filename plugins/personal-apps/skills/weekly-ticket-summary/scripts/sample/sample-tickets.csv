@@ -1,0 +1,41 @@
+ticket_id,customer,plan,category,subject,message,status,priority,hours_open,sla_hours
+TB-4210,Pinecrest Bakery Co.,Team,Billing,Charged twice this month,We were charged twice for the Team plan. Please refund the second charge.,Open,Normal,30,48
+TB-4211,Harbor & Vine Florists,Starter,Billing,Invoice shows wrong tax rate,Our invoices add 9% tax but our region is 7%. Clients are noticing.,Open,Normal,52,48
+TB-4212,Northgate Plumbing Supply,Team,Billing,THIRD time asking: refund still missing,"This is the third ticket. Refund promised two weeks ago, nothing. Cancelling if not fixed today.",Open,High,190,24
+TB-4213,Quillfeather Studio,Starter,Billing,Can't download past receipts,Receipts page spins forever.,Open,Low,12,96
+TB-4214,Bluefin Coffee Roasters,Team,Billing,Upgrade charged full price,"Upgraded mid-month and was charged the full month, not the difference.",Pending,Normal,40,48
+TB-4215,Copperleaf Dental,Business,Billing,Annual plan discount not applied,"Switched to annual, still billed monthly price.",Open,Normal,26,48
+TB-4216,Riverstone Hardware,Team,Sync,Bank feed stopped syncing,No new transactions since the weekend.,Open,High,22,24
+TB-4217,Maple Row Tutoring,Starter,Sync,Bank feed duplicates every transaction,Every payment shows up twice after reconnecting the bank.,Open,Normal,18,48
+TB-4218,Ironwood Fitness,Business,Sync,Payments not matching invoices,Paid invoices still show as unpaid. Our books are wrong and month-end close is blocked.,Open,High,80,24
+TB-4219,Saltmarsh Kayak Tours,Starter,Sync,Bank reconnect loop,"Reconnect asks for login, then asks again.",Open,Normal,9,48
+TB-4220,Lumen Print Shop,Team,Sync,Feed shows old balance,Balance is three days behind.,Pending,Normal,30,48
+TB-4221,Riverstone Hardware,Team,Sync,Still broken after your 'fix',You closed my ticket saying sync was fixed. It is NOT. Nobody is reading these.,Open,High,100,24
+TB-4222,Goldcrest Pet Grooming,Team,Sync,Card payments missing,Card sales from the reader never appear.,Open,Normal,28,48
+TB-4223,Harbor & Vine Florists,Starter,Export,CSV export missing columns,Customer email column is gone from the CSV export.,Open,Low,34,96
+TB-4224,Quillfeather Studio,Starter,Export,PDF invoice cuts off logo,Our logo is cropped on PDFs.,Open,Low,20,96
+TB-4225,Copperleaf Dental,Business,Export,Accountant can't open export,The Excel export opens with garbled characters.,Pending,Normal,44,48
+TB-4226,Ironwood Fitness,Business,Export,Export times out for full year,Full-year export fails after a minute.,Open,Normal,15,48
+TB-4227,Bluefin Coffee Roasters,Team,Login,Locked out after password reset,Reset email never arrives.,Open,High,6,24
+TB-4228,Saltmarsh Kayak Tours,Starter,Login,2FA codes rejected,Authenticator codes always say invalid.,Open,Normal,11,48
+TB-4229,Maple Row Tutoring,Starter,Login,Can't add a second user,Invite link says expired immediately.,Open,Normal,25,48
+TB-4230,Northgate Plumbing Supply,Team,Login,"Whole team locked out, we can't invoice",Nobody on our team can log in since this morning. We have payroll to run. Call us.,Open,Urgent,5,4
+TB-4231,Lumen Print Shop,Team,Login,Session logs out every few minutes,Have to log in again constantly.,Open,Low,30,96
+TB-4232,Pinecrest Bakery Co.,Team,Invoices,Recurring invoice sent twice,Clients got the same recurring invoice twice.,Open,Normal,14,48
+TB-4233,Goldcrest Pet Grooming,Team,Invoices,Can't change invoice numbering,Want to start numbering at 1000.,Open,Low,60,96
+TB-4234,Harbor & Vine Florists,Starter,Invoices,Late fee added by mistake,A late fee was added to a paid invoice. Client is upset with us.,Open,Normal,21,48
+TB-4235,Copperleaf Dental,Business,Invoices,Reminder emails going to spam,Clients never see the reminders.,Pending,Normal,48,48
+TB-4236,Bluefin Coffee Roasters,Team,Invoices,Discount line shows negative tax,Tax goes negative when we add a discount.,Open,Normal,33,48
+TB-4237,Saltmarsh Kayak Tours,Starter,Invoices,Clients see the wrong currency,Invoices show USD for our CAD clients.,Open,Normal,27,48
+TB-4238,Ironwood Fitness,Business,Invoices,Unacceptable: invoices sent with wrong amounts,Your update changed amounts on 12 sent invoices. This is embarrassing for us. Fix it now.,Open,Urgent,8,4
+TB-4239,Maple Row Tutoring,Starter,Feature,Request: split payments,Can clients pay in two parts?,Open,Low,70,96
+TB-4240,Quillfeather Studio,Starter,Feature,Request: dark mode,Please add dark mode.,Open,Low,90,96
+TB-4241,Riverstone Hardware,Team,Feature,Request: custom fields on invoices,Need a PO number field.,Open,Low,55,96
+TB-4242,Goldcrest Pet Grooming,Team,Feature,Request: Spanish invoices,Some clients need Spanish.,Open,Low,65,96
+TB-4243,Lumen Print Shop,Team,Feature,Request: bulk edit clients,Updating 200 clients one by one.,Open,Low,50,96
+TB-4244,Pinecrest Bakery Co.,Team,Mobile,App crashes on photo receipt,App closes when I snap a receipt.,Open,Normal,19,48
+TB-4245,Northgate Plumbing Supply,Team,Mobile,Mobile app shows blank dashboard,Dashboard is empty on the phone.,Open,Normal,23,48
+TB-4246,Bluefin Coffee Roasters,Team,Mobile,Push notifications stopped,No payment alerts anymore.,Open,Low,38,96
+TB-4247,Saltmarsh Kayak Tours,Starter,Mobile,Can't send invoice from app,Send button greyed out.,Open,Normal,16,48
+TB-4248,Maple Row Tutoring,Starter,Billing,How do I cancel?,Where is the cancel button? Nobody answers.,Open,Normal,76,48
+TB-4249,Copperleaf Dental,Business,Sync,Payroll export to bank failed,Bank rejected our payroll file. Staff not paid yet. Need help immediately.,Open,Urgent,4,4

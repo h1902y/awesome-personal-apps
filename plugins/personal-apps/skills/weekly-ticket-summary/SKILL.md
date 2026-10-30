@@ -1,95 +1,75 @@
 ---
 name: weekly-ticket-summary
 description: Turns last week's support ticket export (CSV or pasted rows) into a short weekly summary a support team can read in two minutes, with tickets grouped by theme and counted, one real ticket quoted per theme, and urgent or overdue tickets listed first with how long they have waited. Use when someone shares a help desk export and asks for a weekly ticket summary, review, digest or triage.
-compatibility: Runs a small Python script with uv (or python3). Reads only the file you give it; no network.
 metadata:
-  version: 1.1.0
+  version: 1.2.2
+compatibility: Runs a small Python script with uv (or python3). Reads only the files you give it; no network.
 ---
 
 # Weekly ticket summary
 
 You turn one week of support tickets into a summary the team actually reads. A person still decides what to do; your job is to make sure nothing urgent gets missed and the patterns are easy to see.
 
-**You never count.** A script counts rows, finds urgent and overdue tickets, works out waiting times, counts themes and checks quotes. You only judge what needs reading: who is angry, how tickets group, which quote to show, and the summary. Then you print the script's output as it is.
+**You never count.** The app (`app.py`) reads the data, counts, sorts, checks every number and builds the output. You only do the steps that need judgement (the AI steps below), in the exact shape it asks for, and then print what it builds.
 
 ## Input
 
-- A CSV export from any help desk (Zendesk, Freshdesk, Help Scout, Intercom, a spreadsheet), or rows pasted into the chat. Save pasted rows as a `.csv` file first.
-- If there's no file yet, ask for one, and say they can try it on the sample file `sample-tickets.csv` first.
+- A CSV export (or rows pasted into the chat: save them as a `.csv` file first).
+- No file yet? Ask for one, and offer to try it on the sample first (`sample-tickets.csv`): `app.py sample`.
 
 ## Available scripts
 
-- `scripts/summarize.py` in this skill's folder. Stdlib Python, reads only the file you pass.
-  - Claude Code: `uv run --managed-python "${CLAUDE_SKILL_DIR}/scripts/summarize.py" FILE.csv`
-  - Elsewhere, use the path of this skill's folder in place of `${CLAUDE_SKILL_DIR}`.
-  - If `uv` isn't installed, run the same file with `python3` (Windows: `py`).
-  - Run it as one plain command with the full path: no `cd`, no shell variables, so the user sees exactly what runs. It asks for approval the first time.
+- `scripts/app.py` in this skill's folder: the whole app. Stdlib Python; it keeps its data in `~/.h1902y/weekly-ticket-summary/` (or `$CLAUDE_PLUGIN_DATA`).
+  - Claude Code: `uv run --managed-python "${CLAUDE_SKILL_DIR}/scripts/app.py" <command>`
+  - Elsewhere, use the path of this skill's folder in place of `${CLAUDE_SKILL_DIR}`. Without `uv`, run the same file with `python3` (Windows: `py`).
+  - Run it as one plain command with the full path: no `cd`, no shell variables, so the user sees exactly what runs.
 
 ## What to do
 
-1. **Get the facts.** Run `summarize.py FILE.csv`. It prints JSON:
-   - `columns`: how it mapped the columns by meaning. If one is wrong, run it again with `--map field=column` (fields: id, customer, subject, message, category, status, priority, waiting, created, target, due).
-   - `rows_read`, `rows_skipped`, `columns_missing`;
-   - `tickets`: every readable row, with `waiting` already formatted;
-   - `urgent_by_rule`: tickets with priority High/Urgent or waiting longer than their target, already sorted;
-   - `category_counts`: tickets per value of the category column.
-2. **Flag by reading.** Read every ticket's subject and message. Flag a ticket if the customer is angry, threatening to cancel, or asking for the second or third time. Write a few words on why (e.g. `third time asking; threatening to cancel`). Flag only what they wrote; don't guess intent.
-3. **Group by theme.** Put every ticket in exactly one theme. If the category column makes sense, use `"category"` and the script groups by it. Otherwise name 4–8 themes in plain words and list the ticket ids in each. Don't count them; the script does.
-4. **Pick one quote per theme.** Copy a short phrase word for word from one ticket's `message` in that theme, the one that best shows the pattern. Never paraphrase.
-5. **Write the summary.** Three to five sentences a team lead could read out in a stand-up: the biggest theme, what stands out, and what needs a reply today. Any number in it must come from the script's output (counts, waiting times, how many urgent).
-6. **Build the report.** Write your notes as JSON and run `summarize.py FILE.csv --notes NOTES.json` (or `--notes -` and pipe the JSON in):
+1. **Load a week of tickets.** `app.py run load FILE` (or `app.py sample`). It says how many rows it read and skipped and which columns it couldn't find. If a column was guessed wrong, `app.py map <table>.<field>=<column>` and run it again.
+2. **Name themes and write the summary.** `app.py run read_week`. It stops at each AI step and prints a task file:
+   - `flag` (classify): label only the rows that match one of the labels; for each give `key` (the row's key), `label` and a few words of `reason`. Flag only what the customer wrote; don't guess intent. Reason: a few words from the ticket itself.
+   - `themes` (group): put every row in exactly one group; for each row give `group` (a short plain name) and `key`. Put every ticket in exactly one theme by what it's about. If the category field already groups them well, use the category names.
+   - `quotes` (pick_quote): for each group, pick one row and copy a short phrase from its text word for word: `group`, `key`, `quote`. Pick the short phrase, word for word from one ticket's message, that best shows the theme's pattern.
+   - `summary` (summarize): write the `text` in the sentence range asked; use only numbers that appear in the inputs. Three to five sentences a team lead could read out at the Monday stand-up: the biggest theme, what stands out, what needs a reply today. Use only numbers from the inputs.
+   For each one: read the task file (instructions, rules, inputs, output `shape`), write the output as a JSON list of rows, then `app.py submit <run> <step> OUTPUT.json`. If it prints problems, fix exactly those and submit once more; after a second miss the app uses its own version.
+3. **Show it.** `app.py show report`, and print the markdown exactly as it is.
 
-   ```json
-   {
-     "flags":    {"TB-4212": "third time asking; threatening to cancel"},
-     "problems": {"TB-4212": "Promised refund still missing"},
-     "themes":   {"Billing and refunds": ["TB-4210", "TB-4212"]},
-     "quotes":   {"Billing and refunds": {"id": "TB-4212", "text": "Refund promised two weeks ago, nothing."}},
-     "summary":  "Three to five sentences."
-   }
-   ```
+When the user asks for more:
+- **Draft replies for urgent:** `app.py run draft_replies`, then the same AI steps loop, then `app.py show summary`.
+- **Write escalation note:** `app.py run escalation_note`, then the same AI steps loop, then `app.py show summary`.
+- **Mark one done or snoozed:** `app.py mark <id> done` (or `snoozed --for 1d`, or `open`).
 
-   - `problems`: a few words on each urgent ticket's problem (optional; the subject is used otherwise).
-   - If it prints `{"errors": [...]}`, fix your notes (a ticket in no theme, a quote that isn't word for word) and run it again.
-7. **Print the markdown it outputs, exactly as it is.** Don't change, add or recount any number, row or quote. Don't add advice, next steps or a sign-off unless asked.
+## App agents
+
+This app has 4 app agents, each with its own generated instructions and tools; `app.py` checks every call an agent makes against its own list (`--agent <name>`) and refuses the rest.
+
+| Agent | Role | What for |
+|---|---|---|
+| `analyst` (start here): Ask about this week | analyst | Answer the support lead's questions about this week's tickets and send the work to the right agent. |
+| `triage`: Triage | triage | Flag angry, cancelling and repeat tickets, group the week into themes, and propose done or snooze on the urgent queue. |
+| `drafter`: Draft replies | drafter | Draft short replies to the open urgent tickets and pick one real quote per theme. |
+| `reporter`: Write it up | reporter | Write the stand-up summary and the escalation note for my manager from this week's numbers. |
+
+- **Start with `analyst`** for questions about the data: in Claude Code, the `weekly-ticket-summary-analyst` subagent; elsewhere, follow `skills/weekly-ticket-summary-analyst/SKILL.md` in this context. Give it the user's request and the full path of this skill's `scripts/app.py`.
+- **Handoffs route through this skill.** When an agent's reply ends with a handoff note (`from`, `to`, `period`, `keys`, `note`, `hops`), start the agent it names (`weekly-ticket-summary-<to>`) with that note and the full path of `scripts/app.py` as its first message. Subagents can't start subagents, so they always come back here. After 4 handoffs in one conversation, stop and answer the user yourself.
+- **Approvals:** what an agent proposes, and anything a run it started would save, waits in `app.py show approvals`; run `app.py approve <n>` or `reject <n>` only after the user says which.
+
+When the user asks:
+- To **name themes and write the summary** (Weekly summary): start `weekly-ticket-summary-triage` with "Name the themes and flag the tickets for the {period}, then hand the quotes to the drafter and the summary to the reporter." (`{period}`: the period `app.py status` shows).
+- To **write escalation note** (Weekly summary): start `weekly-ticket-summary-reporter` with "Write the escalation note for my manager for the {period}." (`{period}`: the period `app.py status` shows).
+- To ask about one row of **urgent_queue1** (Urgent queue): start `weekly-ticket-summary-drafter` with the note `{period, keys: [<the row's id>]}`.
+- To **draft replies for urgent** (Urgent queue): start `weekly-ticket-summary-drafter` with "Draft replies for the open urgent tickets in the {period}." (`{period}`: the period `app.py status` shows).
 
 ## Output
 
-The script prints this shape:
-
-```
-# Weekly ticket summary: <N> tickets
-
-## Reply to these first (<n>)
-| Ticket | Customer | Problem | Waiting | Why |
-|---|---|---|---|---|
-
-## Themes
-| Theme | Tickets | Share | Example |
-|---|---|---|---|
-
-## Summary
-<3–5 sentences>
-
-<one line: rows read, rows skipped, columns missing>
-```
-
-## No Python here (Cloudflare OS, or code that runs in a browser)
-
-If you can't run the script, compute the numbers in code (JavaScript in a gadget, or any code tool you have), never in your head, with these exact rules:
-
-- **Rows:** parse the CSV with a real parser (quoted fields can hold commas). Rows read = rows with the header's number of fields; the rest are skipped. Columns are mapped by meaning: id, customer, subject, message, category or tags, status, priority, waiting time (hours open, or created date), target (SLA hours, or due date).
-- **Urgent:** priority is High, Urgent, Critical, P0 or P1, or waiting hours > target hours (strictly greater), or you flagged it (angry, cancelling, repeat). Sort by hours over target, largest first (no target last), then by waiting hours, largest first.
-- **Waiting:** under 48 hours `<n> h`; otherwise `<n> d` = hours / 24 with one decimal, rounding half up (`Math.round(h / 24 * 10) / 10`, shown with `.toFixed(1)`).
-- **Why:** `<priority> priority` if urgent by priority; `<over> h over its <target> h target` if over; then your flag. Joined with `; `.
-- **Themes:** count the ticket ids you assigned to each; check every ticket is in exactly one theme and the counts add up to rows read. Share = count / rows read × 100, one decimal at most (`17.5%`, `20%`).
-- **Quotes:** check in code that each quote is a substring of its ticket's message (`message.includes(quote)`); if not, pick another.
-- Run the code, then print its numbers as they come out.
+Whatever `app.py show` prints. The main output is `app.py show report`.
 
 ## Rules
 
-- Every number comes from the script (or, without Python, from code). Never count or round in your head.
-- Every quote must be word for word from the file; the script checks it.
+- **Never count, sum, sort or work out a date yourself.** Every number comes from `app.py`. If you need one it doesn't print, say so.
+- Quotes and evidence are copied word for word from the data; never paraphrase inside quotation marks.
+- Drafts only: never send, post or promise anything on the user's behalf.
+- Print what `app.py show` gives exactly as it is: don't change, add or recount any number, row or quote, and add no advice or sign-off unless asked.
 - Don't guess customer intent beyond what they wrote.
 - Customer data stays in this chat: don't suggest pasting it anywhere else.
-- If the user asks for an app view and you can build artifacts, build a small app that takes the CSV and shows the same three sections, computing the numbers in its code with the rules above, so they can drop next week's file into it.
