@@ -506,24 +506,14 @@ class AgentTools:
         load = self._load(None)
         vs = self.rt.views(load, self.now)
         reads = ag.get("reads") or []
-        known = K.known_numbers(self.spec, [r for r in reads if r.startswith("view:")], [], vs)
+        fs = K.facts(self.spec, [r for r in reads if r.startswith("view:")], vs)
+        labels = K.page_labels(self.spec)
         for r in reads:
             if r.startswith("view:") or r in NEVER:
                 continue
-            rows = self._rows(r, load)
-            types = self._types(r)
-            known.add(str(len(rows)))
-            for row in rows:
-                for f, v in row.items():
-                    if v is None or f.startswith("_"):
-                        continue
-                    t = types.get(f, "text")
-                    if t in NUMERIC and isinstance(v, str) and D.is_dec(v):
-                        known |= K._forms(v, t)
-                    elif isinstance(v, str):
-                        for m in re.finditer(r"-?[0-9]+(?:\.[0-9]+)?", v):
-                            known |= K._forms(m.group(0), "number")
-        problems = K.claims(text, known, {})
+            key = None if r.startswith("sys.") else self.spec["tables"][r].get("key")
+            fs.append(K.source(self.spec, r, self._types(r), self._rows(r, load), key, labels))
+        problems = K.claims(text, fs, {})
         if problems:
             raise Refused(f"the {what} has numbers {agent}'s reads don't back: " + "; ".join(problems))
 

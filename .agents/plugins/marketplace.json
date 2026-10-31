@@ -1,0 +1,32 @@
+{
+  "name": "personal-apps",
+  "interface": {
+    "displayName": "Personal apps (h1902y)"
+  },
+  "plugins": [
+    {
+      "name": "weekly-ticket-summary",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/h1902y/weekly-ticket-summary.git"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_USE"
+      },
+      "category": "support"
+    },
+    {
+      "name": "personal-apps",
+      "source": {
+        "source": "local",
+        "path": "./plugins/personal-apps"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_USE"
+      },
+      "category": "anyone"
+    }
+  ]
+}

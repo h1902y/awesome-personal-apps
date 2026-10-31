@@ -18,7 +18,9 @@ codex plugin marketplace add h1902y/awesome-personal-apps
 codex plugin add <app-name>@personal-apps
 ```
 
-In Claude (web or desktop), download the app's `-skill.zip` from its repo's latest release, then go to **Customize > Skills > + > Create skill > Upload a skill** and turn it on. Works on any plan, Free included; Code execution must be on in Settings > Capabilities.
+## Install in Claude (web or desktop app)
+
+In Claude, go to **Customize > Plugins**, choose **Add > Add marketplace** and enter `h1902y/awesome-personal-apps`. Then choose **Add** on the app you want, and turn on **Sync automatically** for the marketplace to get new versions. The app's script needs **Code execution** on in **Settings > Capabilities**; on a Team or Enterprise plan, an Owner may need to allow adding marketplaces first.
 
 ## Apps
 
