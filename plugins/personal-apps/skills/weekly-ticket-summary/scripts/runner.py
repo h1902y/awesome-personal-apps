@@ -11,7 +11,6 @@ import re
 
 import checks as K
 import core as C
-import dec as D
 from expr import evaluate
 from parse import parse_field
 from table import map_columns, parse_csv, trim
@@ -361,12 +360,12 @@ class Runtime:
         inputs = self._inputs(run, step)
         ins = step["in"] if isinstance(step["in"], list) else [step["in"]]
         shown = []
+        pct = K.pct_fields(self.spec)
         for ref, i in zip(ins, inputs):
             if isinstance(i, list):
-                # money as people read it (4,900.00 USD), not the store's minor units: the filler writes what it sees
+                # money and percents as people read them (4,900.00 USD, 20%): the filler writes what it sees
                 out = (self.spec["views"][ref[5:]].get("out") or {}) if ref.startswith("view:") else {}
-                money = lambda k, v: C.fmt_money(v, K.money_currency(self.spec, k)) if out.get(k) == "money" and isinstance(v, str) and D.is_dec(v) else v
-                shown.append([{k: money(k, v) for k, v in r.items() if not k.startswith("_")} for r in i])
+                shown.append([{k: K.as_read(self.spec, out, k, v, pct) for k, v in r.items() if not k.startswith("_")} for r in i])
             else:
                 shown.append(i)
         body = {"workflow": run.workflow, "step": step["id"], "task": step["task"], "instructions": step["instructions"],

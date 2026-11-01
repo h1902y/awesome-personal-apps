@@ -218,6 +218,8 @@ def run_checks(spec: dict, ai_step: dict, check_step: dict, value, inputs: list,
     k = input_key(spec, ai_step)
     by_key = {str(r.get(k)): r for r in _rows(inputs[0])}
     problems: list[str] = []
+    if ai_step["task"] == "summarize" and len(items) != 1:  # B-139: an empty answer passed every per-row check
+        problems.append(f"{len(items)} rows, want exactly 1 (one row with the `text`)")
     for check in check_step.get("checks") or []:
         kind = check["kind"]
         if kind == "covers":
@@ -403,6 +405,39 @@ def page_labels(spec: dict) -> dict[str, list[str]]:
     return out
 
 
+def pct_fields(spec: dict) -> set[str]:
+    """The fields people read as a percent, by name: a share() total, a page's pct or bar column or stat, a text's |pct."""
+    out: set[str] = set()
+
+    def walk(o):
+        if isinstance(o, dict):
+            f = o.get("value") if isinstance(o.get("value"), str) else o.get("field") if isinstance(o.get("field"), str) else None
+            if f is not None and o.get("format") in ("pct", "bar"):
+                out.add(f)
+            agg = o.get("agg")
+            if isinstance(agg, dict):
+                out.update(a for a, fn in agg.items() if fn == "share()")
+            for v in o.values():
+                walk(v)
+        elif isinstance(o, list):
+            for v in o:
+                walk(v)
+        elif isinstance(o, str):
+            out.update(m.split(".")[-1] for m in re.findall(r"\{([a-z_][a-z0-9_.]*)(?:\|[a-z]+)*\|pct[|}]", o))
+    walk([spec.get("views") or {}, spec.get("pages") or []])
+    return out
+
+
+def as_read(spec: dict, types: dict, f: str, v, pct: set[str]):
+    """A value as people read it, for what a model sees (task files, agent queries): money as 4,900.00 USD, not the
+    store's minor units; a percent as 20%, not 20 (B-136: Llama wrote "a 20 share" from a bare 20)."""
+    if not isinstance(v, str) or not D.is_dec(v):
+        return v
+    if types.get(f) == "money":
+        return C.fmt_money(v, money_currency(spec, f))
+    return C.fmt_pct(v) if f in pct and types.get(f) in ("int", "number") else v
+
+
 def _value_forms(spec: dict, f: str, t: str, v) -> set[str]:
     if not isinstance(v, str) or not D.is_dec(v):
         return set()
@@ -459,6 +494,8 @@ def source(spec: dict, name: str, types: dict, rows: list, key, labels: dict, ow
             elif isinstance(v, str):
                 for m in _NUM_IN_TEXT.finditer(v):
                     vals |= _forms(m.group(0).replace(",", ""), "number")
+                for w in _word_numbers(v):  # "the two angry customers" backs a draft's "two"
+                    vals |= _forms(w.num, "number")
         v = r.get(ident) if ident else None
         spans = [v] if isinstance(v, str) and re.search(r"[A-Za-z]", v) else []
         mine = own is not None and own[1] is not None and r.get(own[0]) is not None and str(r.get(own[0])) == str(own[1])
@@ -510,12 +547,12 @@ def _rows_named(sentence: str, fs: list[dict]) -> list[list[int]]:
              or any(re.search(rf"\b{re.escape(s)}\b", sentence, re.I) for s in r["spans"])] for src in fs]
 
 
-def _unit(m, s: str) -> str | None:
+def _unit(m: _Num, s: str) -> str | None:
     """A found number's unit: pct, hours (h or d), money (a currency code or sign beside it), or None for a count."""
-    u = (m.group(2) or "").strip()
+    u = m.unit.strip()
     if u:
         return "pct" if u == "%" or u.lower().startswith("per") else "hours"
-    if re.match(r"\s*[A-Z]{3}(?!\w)", s[m.end():]) or re.search(r"(?:[$\u20ac\u00a3\u00a5\u20b9]|(?<!\w)[A-Z]{3})\s*$", s[:m.start()]):
+    if re.match(r"\s*[A-Z]{3}(?!\w)", s[m.end:]) or re.search(r"(?:[$\u20ac\u00a3\u00a5\u20b9]|(?<!\w)[A-Z]{3})\s*$", s[:m.start]):
         return "money"
     return None
 
@@ -563,8 +600,87 @@ def _masked(s: str) -> str:
     return re.sub(r"\b(?:19|20)[0-9]{2}\b", " ", s)
 
 
-def _numbers(s: str) -> list:
-    return list(re.finditer(r"((?:[0-9]{1,3}(?:,[0-9]{3})+|[0-9]+)(?:\.[0-9]+)?)(\s*%|\s+per\s*cent\b|[\s-]*(?:h\b|hrs?\b|hours?\b|d\b|days?\b))?", s, re.I))
+class _Num:
+    """A number found in a text: where it is, its value (a decimal string), its unit as written ("", "%", " days")."""
+    def __init__(self, start: int, end: int, num: str, unit: str, text: str):
+        self.start, self.end, self.num, self.unit, self.text = start, end, num, unit, text
+
+
+_UNIT = r"(\s*%|\s+per\s*cent\b|[\s-]*(?:h\b|hrs?\b|hours?\b|d\b|days?\b))"
+_DIGITS = re.compile(r"((?:[0-9]{1,3}(?:,[0-9]{3})+|[0-9]+)(?:\.[0-9]+)?)" + _UNIT + "?", re.I)
+_UNIT_AT = re.compile(_UNIT, re.I)
+
+# Numbers written as words read like digits (Llama wrote "nine urgent" and "thirteen point three"): zero to 999,
+# "twenty-one", "a hundred", "a dozen", "thirteen point three". ASCII letters only, either case (no re.I, so both
+# runtimes read the same text). Not a word in a compound ("one-off", "two-factor"), and not "one" in "one of", "one or",
+# "one another", "one by one", "no one", "each one", "at least one", "the worst one" and the like.
+_ONES = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]
+_TEENS = ["ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"]
+_TENS = ["twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"]
+_WORD_VALUE = {**{w: i for i, w in enumerate(_ONES)}, **{w: 10 + i for i, w in enumerate(_TEENS)}, **{w: 20 + 10 * i for i, w in enumerate(_TENS)}}
+
+
+def _either_case(w: str) -> str:
+    return "".join(f"[{c}{c.upper()}]" for c in w)
+
+
+def _alt(ws: list[str]) -> str:
+    return "|".join(_either_case(w) for w in sorted(ws, key=lambda w: (-len(w), w)))
+
+
+_BELOW_100 = rf"(?:(?:{_alt(_TENS)})(?:(?:-|\s+)(?:{_alt(_ONES[1:])}))?|{_alt(_TEENS)}|{_alt(_ONES)})"
+_NUM_WORDS = re.compile(
+    rf"(?<!\w)(?:(?:{_either_case('a')}|{_alt(_ONES[1:])})\s+{_either_case('hundred')}(?:\s+{_BELOW_100})?"
+    rf"|{_either_case('a')}\s+{_either_case('dozen')}"
+    rf"|{_BELOW_100}\s+{_either_case('point')}(?:\s+(?:{_alt(_ONES)}))+"
+    rf"|{_BELOW_100})(?!\w)")
+_ONE_BEFORE = re.compile(rf"(?<!\w)(?:{_alt(['the', 'this', 'that', 'each', 'every', 'any', 'no', 'some', 'which', 'another', 'at', 'by'])})"
+                         r"(?:\s+[^\s.,;:!?]+){0,2}\s+$")  # "the one", "the worst one", "at least one"
+_ONE_AFTER = re.compile(rf"\s+(?:{_alt(['of', 'or', 'another', 'by'])})(?!\w)")
+
+
+def _word_value(text: str) -> str:
+    ws = [w.lower() for w in re.findall(r"[A-Za-z]+", text)]
+    below = lambda xs: sum(_WORD_VALUE[x] for x in xs)
+    if ws[-1] == "dozen":
+        return "12"
+    if "point" in ws:
+        i = ws.index("point")
+        return D.from_(f"{below(ws[:i])}." + "".join(str(_WORD_VALUE[x]) for x in ws[i + 1:]))
+    if "hundred" in ws:
+        i = ws.index("hundred")
+        return str((1 if ws[0] == "a" else _WORD_VALUE[ws[0]]) * 100 + below(ws[i + 1:]))
+    return str(below(ws))
+
+
+def _word_numbers(s: str) -> list[_Num]:
+    out = []
+    for m in _NUM_WORDS.finditer(s):
+        u = _UNIT_AT.match(s, m.end())
+        unit = u.group(1) if u else ""
+        if not unit and re.match(r"-\w", s[m.end():]):
+            continue  # a compound: "one-off", "two-factor"
+        if m.group(0).lower() == "one" and (_ONE_BEFORE.search(s[:m.start()]) or _ONE_AFTER.match(s, m.end())):
+            continue
+        out.append(_Num(m.start(), m.end() + len(unit), _word_value(m.group(0)), unit, m.group(0) + unit))
+    return out
+
+
+def _numbers(s: str) -> list[_Num]:
+    """The numbers in a text, digits and words, in order."""
+    digits = [_Num(m.start(), m.end(), D.from_(m.group(1).replace(",", "")), m.group(2) or "", m.group(0)) for m in _DIGITS.finditer(s)]
+    return sorted(digits + _word_numbers(s), key=lambda n: n.start)
+
+
+def _hint(n: str, fs: list[dict]) -> str:
+    """What has exactly this value, by the words that would tie it (B-139: "7 … missed their response target" was sent
+    back, and the line didn't say that "over target" is the 7): a field shown as one value, or a view's row count."""
+    names = []
+    for src in fs:
+        if src["words"] and src["count"] == n:
+            names.append(src["name"])
+        names += [fld["name"] for fld in src["fields"] if fld["shown"] == n]
+    return " or ".join(f"\"{x}\" = {n}" for x in list(dict.fromkeys(names))[:2])
 
 
 def claims(text: str, fs: list[dict], groups: dict[str, str]) -> list[str]:
@@ -584,16 +700,19 @@ def claims(text: str, fs: list[dict], groups: dict[str, str]) -> list[str]:
                 continue
             vals, vague, named, _ = _beside(clause, fs, rows)
             for m in nums:
-                n = D.from_(m.group(1).replace(",", ""))
+                n = m.num
                 u = _unit(m, cs)
                 if n in vals or (n in vague and (not vals or u == "hours")) or (u and any(n in (src.get("kinds") or {}).get(u, []) for src in fs)):
                     continue
+                hint = _hint(n, fs)
                 if named:
-                    errs.append(f"\"{m.group(0).strip()}\" doesn't match what it sits beside ({', '.join(named[:4])}): {shown}")
+                    errs.append(f"\"{m.text.strip()}\" doesn't match what it sits beside ({', '.join(named[:4])})"
+                                + (f"; the inputs have {hint}: say that beside it" if hint else "") + f": {shown}")
                 else:
-                    errs.append(f"\"{m.group(0).strip()}\" isn't tied to anything the app counts; name what it counts beside it: {shown}")
+                    errs.append(f"\"{m.text.strip()}\" isn't tied to anything the app counts; name what it counts beside it"
+                                + (f" (the inputs have {hint})" if hint else "") + f": {shown}")
             # a theme's count, in a clause that names that one theme ("Sync with 8, … and Billing and Invoices are close behind")
-            counts = [D.from_(m.group(1).replace(",", "")) for m in nums if not m.group(2)]  # 4,900.00 is one number
+            counts = [m.num for m in nums if not m.unit]  # 4,900.00 is one number
             names = [g for g in groups if g and re.search(rf"\b{re.escape(g)}\b", cs, re.I)]
             if counts and len(names) == 1 and D.from_(groups[names[0]]) not in counts:
                 # a number something else beside it names strongly isn't the theme's ("4 tickets over their target, with

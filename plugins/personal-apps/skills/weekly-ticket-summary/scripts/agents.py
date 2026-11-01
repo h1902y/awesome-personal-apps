@@ -270,11 +270,12 @@ class AgentTools:
                 shadow.append(sh)
             rows = [rows[sh["_i"]] for sh in _sort(shadow, keys, lambda f: types.get(f, "text"))]
         total = len(rows)
-        money = lambda f, v: C.fmt_money(v, K.money_currency(self.spec, f)) if types.get(f) == "money" and isinstance(v, str) and D.is_dec(v) else v
+        pct = K.pct_fields(self.spec)
+        read = lambda f, v: K.as_read(self.spec, types, f, v, pct)
         out = []
-        for r in rows[:limit]:  # money as people read it (4,900.00 USD)
-            out.append({f: money(f, r.get(f)) for f in fields} if fields is not None else
-                       {f: money(f, v) for f, v in r.items() if not f.startswith("_")})
+        for r in rows[:limit]:  # money and percents as people read them (4,900.00 USD, 20%)
+            out.append({f: read(f, r.get(f)) for f in fields} if fields is not None else
+                       {f: read(f, v) for f, v in r.items() if not f.startswith("_")})
         if period == "all":
             shown = "all"
         elif source.startswith("sys."):
